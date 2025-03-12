@@ -1,6 +1,6 @@
 {
     "nrf-connect.applications": [
-        "${workspaceFolder}\\example\\zephyr\\nordic\\basic"
+        "${workspaceFolder}\\example\\zephyr\\nordic\\verify_communication"
     ],
     "files.associations": {
         "hal_spi.h": "c",
