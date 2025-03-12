@@ -1,0 +1,12 @@
+{
+    "nrf-connect.applications": [
+        "${workspaceFolder}\\example\\zephyr\\nordic\\basic"
+    ],
+    "files.associations": {
+        "hal_spi.h": "c",
+        "type_traits": "c",
+        "dw1000.h": "c",
+        "dw1000_hw.h": "c",
+        "main.h": "c"
+    }
+}
