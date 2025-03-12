@@ -1,9 +1,17 @@
 #ifndef DW1000_REG_H
 #define DW1000_REG_H
 
+/*========= DEVICE ID ==========*/
 #define REG_DEV_ID 0x00
 #define REG_EXT_UUID 0x01
 
+#define REG_PAN_ID_AND_SHORT_ADDR 0x03
+/*========= SYSTEM CONFIGURATION ==========*/
+
+#define REG_SYS_CFG 0x04
+
+
+#define REG_SYS_CTRL 0x0D
 
 /*========= GPIO CONTROL ==========*/
 #define REG_GPIO 0x26
@@ -19,11 +27,7 @@
 #define SREG_GPIO_RAW 0x28
 
 
-/*========= DEFAULT VALUES ==========*/
-#define DEF_DEV_ID_REV 0x00
-#define DEF_DEV_ID_VER 0x03
-#define DEF_DEV_ID_MODEL 0x01
-#define DEF_DEV_ID_RIDTAG 0xDECA
+
 
 
 #endif

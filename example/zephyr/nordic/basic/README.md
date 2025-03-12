@@ -11,8 +11,10 @@ To build this zephyr example, you can:
 
 ### RESULT
 
-The host controller should be able to print out the dev ID
+The host controller should be able to print out the dev ID:
+
 ![Print out result](doc/image.png)
 
 The LEDs should all be HIGH as follows:
+
 ![LEDs as HIGH](doc/led.jpg)

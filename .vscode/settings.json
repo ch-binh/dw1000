@@ -1,12 +1,17 @@
 {
     "nrf-connect.applications": [
-        "${workspaceFolder}\\example\\zephyr\\nordic\\verify_communication"
+        "${workspaceFolder}\\example\\zephyr\\nordic\\verify_communication",
+        "${workspaceFolder}\\example\\zephyr\\nordic\\basic"
     ],
     "files.associations": {
         "hal_spi.h": "c",
         "type_traits": "c",
         "dw1000.h": "c",
         "dw1000_hw.h": "c",
-        "main.h": "c"
+        "main.h": "c",
+        "stdint.h": "c",
+        "stdbool.h": "c",
+        "dw1000_debug.h": "c",
+        "cstdio": "c"
     }
 }
