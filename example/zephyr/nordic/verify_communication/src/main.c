@@ -26,10 +26,8 @@ static int main_setup(void)
 	hal_spi_init();
 	hal_hw_dw1000_init();
 
-	dw1000_set_pan_id_and_short_addr(DW_NETWORK_ID, DW_SHORT_ADDR);
+	dw1000_modify_pan_id_and_short_addr(DW_NETWORK_ID, DW_SHORT_ADDR);
 	dw1000_write_pan_id_and_short_addr();
-
-	dw1000_set_sys_ctrl(DW_IDLE_MODE);
 
 	printk("[%s] Setup complete...\n", __func__);
 }
@@ -57,6 +55,8 @@ int main(void)
 
 	dw1000_set_leds_high();
 	// GPIOS 0 1 2 3 should be high
+
+	//dw1000_cfg_sysctrl_tx_start();
 
 	while (1)
 	{

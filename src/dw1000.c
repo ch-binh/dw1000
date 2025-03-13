@@ -8,31 +8,100 @@ dw1000_dev_t dw1000_copy_dev_inst(void)
 {
     return __dw_dev;
 }
-
 /* ###########################################################################
- * ############################## SYSTEM CONFIGURATION #######################
+ * ############################### INIT FUNCTIONS ############################
  * ######################################################################### */
-/* ======================= 1. SET ============================*/
 
-int dw1000_set_sys_ctrl(sys_mode_e mode)
+void dw1000_new_config()
 {
-    if (mode < DW_IDLE_MODE || mode > DW_TX_MODE)
-        return -1; // Error: Invalid mode
+    // idle();
+    dw1000_read_dev_pan_id_short_addr(NULL);
+    dw1000_read_syscfg(NULL);
 
-    __dw_dev.sysctrl.mode = mode;
+    // readChannelControlRegister();
+    // readTransmitFrameControlRegister();
+    // readSystemEventMaskRegister();
+}
+
+/* ###########################################################################
+ * ######################### SYSTEM CONFIG AND CONTROL #######################
+ * ######################################################################### */
+/* ================ BASIC OPERATIONS ========================*/
+void dw1000_read_syscfg(uint8_t *result)
+{
+    uint8_t reg_buf[] = {REG_SYS_CFG};
+    uint8_t rx_buf[LEN_SYSCFG + sizeof(reg_buf)];
+
+    dw1000_write_read(reg_buf, sizeof(reg_buf), rx_buf, sizeof(rx_buf));
+    dw1000_modify_syscfg((uint8_t *)rx_buf + sizeof(reg_buf)); // skip rx_buf[0] as it is reg dummy data
+    result = ((uint8_t *)rx_buf + sizeof(reg_buf));
+}
+
+void dw1000_modify_syscfg(uint8_t *bit_mask)
+{
+    for (int i = 0; i < LEN_SYSCFG; i++)
+    {
+        __dw_dev.syscfg[i] = bit_mask[i];
+    }
+}
+
+int dw1000_write_syscfg(void)
+{
+    uint8_t reg_buf[] = {REG_SYS_CFG};
+    dw1000_write_read(reg_buf, sizeof(reg_buf), __dw_dev.syscfg, LEN_SYSCFG);
+
     return 0;
 }
 
-/* ================ 2. WRITE AND READ ========================*/
-int dw1000_cfg_sys_idle(void)
+void dw1000_read_syctrl(uint8_t *result)
 {
-    uint8_t tx_buf[4] = {0x00, 0x00, 0x00, 0x00};
-    dw1000_write(REG_SYS_CFG, 1, tx_buf, sizeof(tx_buf));
+    uint8_t reg_buf[] = {REG_SYS_CTRL};
+    uint8_t rx_buf[LEN_SYSCFG + sizeof(reg_buf)];
+
+    dw1000_write_read(reg_buf, sizeof(reg_buf), rx_buf, sizeof(rx_buf));
+    dw1000_modify_syscfg(rx_buf + 1); // skip rx_buf[0] as it is reg dummy data
+    result = rx_buf + 1;
+}
+
+void dw1000_modify_sysctrl(uint8_t *bit_mask)
+{
+    for (int i = 0; i < LEN_SYSCFG; i++)
+    {
+        __dw_dev.sysctrl[i] = bit_mask[i];
+    }
+}
+
+int dw1000_write_sysctrl(void)
+{
+    uint8_t reg_buf[] = {REG_SYS_CFG};
+    dw1000_write_read(reg_buf, sizeof(reg_buf), __dw_dev.sysctrl, REG_SYS_CTRL);
+
+    return 0;
+}
+
+/* ---------------------- HANDY FUNCTIONS ---------------------------------*/
+int dw1000_cfg_sysctrl_idle(void)
+{
+    uint8_t bit_mask[4];
+    dw1000_read_syctrl(bit_mask);
+    bit_mask[0] |= 0x06;
+    dw1000_modify_sysctrl(bit_mask);
+    dw1000_write_sysctrl();
+    return 0;
+}
+
+int dw1000_cfg_sysctrl_tx_start(void)
+{
+    uint8_t bit_mask[4];
+    dw1000_read_syctrl(bit_mask);
+    bit_mask[0] = 0x01;
+    dw1000_modify_sysctrl(bit_mask);
+    dw1000_write_sysctrl();
     return 0;
 }
 
 /* ###########################################################################
- * ############################## GPIO INDENTITY #############################
+ * ############################## GPIO SETTINGS ##############################
  * ######################################################################### */
 
 int dw1000_set_gpio_mode() {}
@@ -95,71 +164,74 @@ int dw1000_set_leds_high(void)
 void dw1000_read_gpio(void)
 {
 
-    uint8_t reg_buffer[] = {REG_GPIO, SREG_GPIO_DOUT};
-    const uint8_t reg_size = sizeof(reg_buffer);
+    uint8_t reg_buf[] = {REG_GPIO, SREG_GPIO_DOUT};
+    const uint8_t reg_size = sizeof(reg_buf);
     const uint8_t data_size = 4 + reg_size;
     uint8_t data_buf[data_size];
 
-    dw1000_write_read(reg_buffer, reg_size, data_buf, data_size);
+    dw1000_write_read(reg_buf, reg_size, data_buf, data_size);
 }
 
 /* ###########################################################################
  * ############################## DEVICE INDENTITY ###########################
  * ######################################################################### */
 
-/* ======================= 1. SET ============================*/
-int dw1000_set_dev_id(uint8_t *buf)
+/* ======================= 1. 0x00 DEVICE ID ============================*/
+
+void dw1000_read_dev_id(uint8_t *result)
 {
-    if (buf == NULL)
+    uint8_t reg_buf[] = {REG_DEV_ID};
+    uint8_t data_buf[LEN_DEV_ID + sizeof(reg_buf)];
+
+    dw1000_write_read(reg_buf, sizeof(reg_buf), data_buf, sizeof(data_buf));
+
+    dw1000_set_dev_id((uint8_t *)data_buf + sizeof(reg_buf));
+    result = (uint8_t *)data_buf + sizeof(reg_buf);
+}
+
+int dw1000_set_dev_id(uint8_t *bit_mask)
+{
+    if (bit_mask == NULL)
     {
         return -1;
     }
-    __dw_dev.id.rev = buf[0] & 0x0F;
-    __dw_dev.id.ver = (buf[0] >> 4) & 0x0F;
-    __dw_dev.id.model = buf[1];
-    __dw_dev.id.ridtag = buf[2] | (buf[3] << 8);
+    __dw_dev.id.rev = bit_mask[0] & 0x0F;
+    __dw_dev.id.ver = (bit_mask[0] >> 4) & 0x0F;
+    __dw_dev.id.model = bit_mask[1];
+    __dw_dev.id.ridtag = bit_mask[2] | (bit_mask[3] << 8);
     return 0;
 }
 
-int dw1000_set_dev_uuid(uint8_t *uuid)
+// no write dev id
+/* ======================= 2. 0x01 DEVICE EXTENDED UUID ============================*/
+
+void dw1000_read_dev_uuid(uint8_t *result)
 {
-    if (uuid == NULL)
+    uint8_t reg_buf[] = {REG_EXT_UUID};
+    uint8_t data_buf[LEN_EUUID + sizeof(reg_buf)];
+
+    dw1000_write_read(reg_buf, sizeof(reg_buf), data_buf, sizeof(data_buf));
+
+    dw1000_modify_dev_uuid((uint8_t *)data_buf + sizeof(reg_buf)); // move up one element as buf[0] is dummy data
+
+    if (result == NULL)
+    {
+        return;
+    }
+    result = ((uint8_t *)data_buf + sizeof(reg_buf));
+}
+
+int dw1000_modify_dev_uuid(uint8_t *bit_mask)
+{
+    if (bit_mask == NULL)
     {
         return -1;
     }
 
     for (size_t i = 0; i < LEN_EUUID; i++)
     {
-        __dw_dev.addr.uuid[i] = uuid[i];
+        __dw_dev.addr.uuid[i] = bit_mask[i];
     }
-    return 0;
-}
-
-int dw1000_set_pan_id_and_short_addr(uint16_t pan_id, uint16_t short_addr)
-{
-    if (pan_id == 0 || short_addr == 0)
-    {
-        return -1;
-    }
-    __dw_dev.addr.pan_id = pan_id;
-    __dw_dev.addr.short_addr = short_addr;
-    return 0;
-}
-
-/* =================== 2. WRITE AND READ*/
-int dw1000_read_dev_id()
-{
-    const uint8_t data_size = 5;
-    uint8_t data_buf[data_size];
-    const uint8_t reg_size = 1;
-    uint8_t reg_buffer[reg_size];
-    reg_buffer[0] = REG_DEV_ID;
-
-    dw1000_write_read(reg_buffer, reg_size, data_buf, data_size);
-
-    uint8_t *set_buf = (uint8_t *)data_buf + 1; // move up one element as buf[0] is dummy data
-    dw1000_set_dev_id(set_buf);
-
     return 0;
 }
 
@@ -172,18 +244,30 @@ int dw1000_write_dev_uuid(void)
     return 0;
 }
 
-int dw1000_read_dev_uuid(void)
+/* ======================= 2. 0x03 PAN ID AND SHORT ADDRESS ============================*/
+
+void dw1000_read_dev_pan_id_short_addr(uint8_t *result)
 {
-    uint8_t reg_buffer[] = {REG_EXT_UUID};
-    const uint8_t reg_size = sizeof(reg_buffer);
-    const uint8_t data_size = LEN_EUUID + reg_size;
+    uint8_t reg_buf[] = {REG_PAN_ID_AND_SHORT_ADDR};
+    const uint8_t reg_size = sizeof(reg_buf);
+    const uint8_t data_size = 4 + reg_size;
     uint8_t data_buf[data_size];
 
-    dw1000_write_read(reg_buffer, reg_size, data_buf, data_size);
+    dw1000_write_read(reg_buf, reg_size, data_buf, data_size);
+    dw1000_modify_pan_id_and_short_addr(data_buf[1] | (data_buf[2] << 8),
+                                        data_buf[3] | (data_buf[4] << 8));
 
-    uint8_t *set_buf = (uint8_t *)data_buf + 1; // move up one element as buf[0] is dummy data
-    dw1000_set_dev_uuid(set_buf);
+    result = (uint8_t *)data_buf + 1;
+}
 
+int dw1000_modify_pan_id_and_short_addr(uint16_t pan_id, uint16_t short_addr)
+{
+    if (pan_id == 0 || short_addr == 0)
+    {
+        return -1;
+    }
+    __dw_dev.addr.pan_id = pan_id;
+    __dw_dev.addr.short_addr = short_addr;
     return 0;
 }
 
@@ -197,21 +281,6 @@ int dw1000_write_pan_id_and_short_addr(void)
 
     /* Store settings */
     dw1000_write(reg, sizeof(reg), data, sizeof(data));
-
-    return 0;
-}
-
-int dw1000_read_dev_pan_id_short_addr(void)
-{
-    uint8_t reg_buffer[] = {REG_PAN_ID_AND_SHORT_ADDR};
-    const uint8_t reg_size = sizeof(reg_buffer);
-    const uint8_t data_size = 4 + reg_size;
-    uint8_t data_buf[data_size];
-
-    dw1000_write_read(reg_buffer, reg_size, data_buf, data_size);
-
-    dw1000_set_pan_id_and_short_addr(data_buf[1] | (data_buf[2] << 8),
-                                     data_buf[3] | (data_buf[4] << 8));
 
     return 0;
 }

@@ -7,8 +7,12 @@
 #define TX_MODE 0x02
 
 // Extended UUID
+#define LEN_DEV_ID 4
 #define LEN_EUUID 8
-
+// SYS CONFIG
+#define LEN_SYSCFG 4
+// SYS CTRL
+#define LEN_SYSCTRL 4
 /*========= DEFAULT VALUES ==========*/
 #define DEF_DEV_ID_REV 0x00
 #define DEF_DEV_ID_VER 0x03
